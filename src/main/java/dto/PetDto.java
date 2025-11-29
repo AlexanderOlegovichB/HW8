@@ -10,15 +10,11 @@ import java.util.List;
 @NoArgsConstructor
 @AllArgsConstructor
 public class PetDto {
+    @EqualsAndHashCode.Exclude
     private long id;
     private CategoryDto category;
     private String name;
-
-    @Singular("photoUrl")
     private List<String> photoUrls;
-
-    @Singular("Tag")
     private List<TagsDto> tags;
-
     private String status;
 }

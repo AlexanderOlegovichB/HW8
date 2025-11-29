@@ -12,34 +12,59 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
-import specs.PetStoreSpecs;
 
 import java.util.List;
 
-import static io.restassured.RestAssured.given;
-import static org.hamcrest.Matchers.*;
+import static org.assertj.core.api.Assertions.assertThat;
 
 @Epic("Магазин животных")
 @Feature("Управление животными")
-@DisplayName("Успешное изменение животного")
+@DisplayName("Изменение животного")
 
 public class UpdatePetTest {
 
 
     private Long petId;
-    private String petName = "Пушистый";
-    private String petStatus = "available";
 
     @BeforeEach
     public void createPetForTest() {
-        petId = PetHelpers.createPet(petName, petStatus);
+        String name = "Жопка";
+        String status = "available";
+        long categoryId = 1;
+        long tagId = 0;
+        String categoryName = "Dogs";
+        String tagName = "Cute";
+        String urlPhoto = "https://example.com/pezdyukPhoto.jpg";
+
+        CategoryDto category = CategoryDto.builder()
+                .id(categoryId)
+                .name(categoryName)
+                .build();
+
+        List<TagsDto> tags = List.of(TagsDto.builder().id(tagId).name(tagName).build());
+
+        List<String> photos = List.of(urlPhoto);
+
+// DTO, который мы отправляем в запросе
+        PetDto requestPet = PetDto.builder()
+                .category(category)
+                .name(name)
+                .photoUrls(photos)
+                .tags(tags)
+                .status(status)
+                .build();
+
+// делаем POST и десериализуем ответ
+        PetDto responsePet = PetHelpers.createPet(requestPet);
+
+        petId = responsePet.getId();
     }
 
     @Test
     @Story("Пользователь изменяет животное с валидными данными")
-    @DisplayName("Успешное изменение животинки")
+    @DisplayName("Успешное изменение животинки с валидными данными")
     @Description("Изменение животного с валидными данными")
-    public void succesSetPetTest() {
+    public void updatePetPositiveTest() {
 
         long id = 0;
         long setCategoryId = 3;
@@ -57,36 +82,32 @@ public class UpdatePetTest {
                 .name(setCategoryName)
                 .build();
 
-        List<TagsDto> tags = List.of(TagsDto.builder().id(setTagId).name(setTagName).build());
+        List<TagsDto> tags = List.of(TagsDto.builder()
+                .id(setTagId)
+                .name(setTagName)
+                .build());
 
         List<String> photos = List.of(setUrlPhoto);
 
         PetDto pet = PetDto.builder()
-                .id(petId)
-                .category(category)
+                .id(petId).category(category)
                 .name(setName)
                 .photoUrls(photos)
                 .tags(tags)
-                .status(setStatus)
-                .build();
+                .status(setStatus).build();
 
-        given()
-                .spec(PetStoreSpecs.requestSpec())
-                .body(pet)
-                .when()
-                .put("/pet")
-                .then()
-                .spec(PetStoreSpecs.responseSpecOk())
-                .body("name", equalTo(pet.getName()))
-                .body("category.name", equalTo(category.getName()))
-                .body("photoUrls", hasItems(photos.toArray(new String[0])))
-                .body("photoUrls", hasSize(photos.size()))
-                .body("tags", hasSize(tags.size()))
-                .body("status", equalTo(pet.getStatus()));
+        PetDto updatedPet = PetHelpers.updatePet(pet);
+        // make sure objects equals
+        assertThat(updatedPet).isEqualTo(pet);
     }
 
     @AfterEach
-    public void cleanup() {
-        PetHelpers.deletePet(petId);
+    public void cleanUp() {
+        if (petId != null) {
+            try {
+                PetHelpers.deletePet(petId);
+            } catch (Exception e) {
+            }
+        }
     }
 }
